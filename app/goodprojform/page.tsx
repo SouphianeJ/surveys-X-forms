@@ -1,212 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useForm, useFieldArray, UseFormRegister } from "react-hook-form";
-import { z } from "zod";
+import { useEffect, useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-const IndicatorSchema = z.object({
-  name: z.string().min(1, "Nom requis"),
-  baseline: z.string().optional().default(""),
-  target: z.string().optional().default(""),
-  actual: z.string().optional().default(""),
-  gap: z.string().optional().default("")
-});
-
-const StorySchema = z.object({
-  asA: z.string().min(1),
-  iWant: z.string().min(1),
-  soThat: z.string().min(1),
-  acceptanceCriteria: z.string().min(1),
-  estimate: z.coerce.number().min(0).default(1)
-});
-
-const RiskSchema = z.object({
-  risk: z.string().min(1),
-  probability: z.enum(["L", "M", "H"]).default("M"),
-  impact: z.enum(["L", "M", "H"]).default("M"),
-  response: z.string().min(1),
-  owner: z.string().min(1)
-});
-
-const RaciSchema = z.object({
-  task: z.string().min(1),
-  r: z.string().min(1),
-  a: z.string().min(1),
-  c: z.string().optional().default(""),
-  i: z.string().optional().default("")
-});
-
-const FormSchema = z.object({
-  pitch: z.string().min(8, "Un pitch d’au moins 8 caractères"),
-  projectClient: z.string().min(1),
-  period: z.string().min(1),
-  role: z.string().min(1),
-  stakeholders: z.string().optional().default(""),
-  targetAudience: z.string().min(1),
-  scope: z.array(z.string()).min(1, "Sélectionne au moins un périmètre"),
-  context: z.string().min(1),
-  pains: z.array(z.string()).default([]),
-  baseline: z.object({
-    timeToCompetency: z.string().optional().default(""),
-    completionRate: z.string().optional().default(""),
-    csat: z.string().optional().default(""),
-    businessKpi: z.string().optional().default("")
-  }),
-  constraints: z.array(z.string()).default([]),
-  hypotheses: z.array(z.string()).default([]),
-  learningObjectives: z.array(z.string()).min(1, "Au moins 1 objectif"),
-  kirkpatrick: z.object({
-    l1Target: z.string().optional().default(""),
-    l2Target: z.string().optional().default(""),
-    l3Target: z.string().optional().default(""),
-    l4Target: z.string().optional().default(""),
-    plan: z.object({
-      what: z.string().optional().default(""),
-      when: z.string().optional().default(""),
-      where: z.string().optional().default(""),
-      tool: z.string().optional().default(""),
-      owner: z.string().optional().default("")
-    })
-  }),
-  scrum: z.object({
-    epic: z.string().min(1),
-    sprintLength: z.string().min(1),
-    ceremonies: z.array(z.string()).default(["Planning", "Daily", "Review", "Rétrospective"]),
-    metrics: z.array(z.string()).default(["Vélocité", "Lead time", "Défauts", "Satisfaction"]),
-    stories: z.array(StorySchema).min(1, "Ajoute au moins 1 user story"),
-    dor: z.array(z.string()).default([
-      "Story claire",
-      "Dépendances levées",
-      "Design/tech validés"
-    ]),
-    dod: z.array(z.string()).default([
-      "Fonctionnel validé",
-      "Accessibilité WCAG AA",
-      "Traçabilité xAPI/SCORM",
-      "Tests verts",
-      "Documentation à jour"
-    ])
-  }),
-  addie: z.object({
-    analysis: z.array(z.string()).default([]),
-    design: z.array(z.string()).default([]),
-    development: z.array(z.string()).default([]),
-    implementation: z.array(z.string()).default([]),
-    evaluation: z.array(z.string()).default([])
-  }),
-  results: z.object({
-    indicators: z.array(IndicatorSchema).default([]),
-    highlights: z.array(z.string()).default([])
-  }),
-  proofs: z.object({
-    demo: z.string().optional().default(""),
-    deliverables: z.array(z.string()).default([]),
-    codeRepo: z.string().optional().default(""),
-    dashboard: z.string().optional().default(""),
-    testimonials: z.array(z.string()).default([])
-  }),
-  learnings: z.object({
-    worked: z.array(z.string()).default([]),
-    change: z.array(z.string()).default([]),
-    next: z.array(z.string()).default([])
-  }),
-  accessibilityChecklist: z.array(z.string()).default([]),
-  risks: z.array(RiskSchema).default([]),
-  raci: z.array(RaciSchema).default([]),
-  annexes: z.object({
-    xapi: z.string().optional().default(""),
-    storyTemplate: z.string().optional().default(""),
-    links: z.array(z.string()).default([])
-  })
-});
-
-type FormData = z.infer<typeof FormSchema>;
-
-// --------- Helpers UI ----------
-function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  return (
-    <section className="card p-5 md:p-6">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        {subtitle && <p className="text-sm text-ink-300">{subtitle}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Row({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 md:grid-cols-2">{children}</div>;
-}
-
-function Label({ children }: { children: React.ReactNode }) {
-  return <label className="label">{children}</label>;
-}
-
-function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`input ${props.className ?? ""}`} />;
-}
-
-function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={`textarea ${props.className ?? ""}`} />;
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="badge">{children}</span>;
-}
+import { FormSchema, FormData } from "./schema";
+import { defaultValues, demoData } from "./form-data";
+import { Section, Row, Label, TextInput, TextArea, ArrayEditor, Checklist } from "./components";
 
 // --------- Page ----------
 export default function GoodProjFormPage() {
-  const defaultValues: FormData = useMemo(
-    () => ({
-      pitch: "",
-      projectClient: "",
-      period: "",
-      role: "",
-      stakeholders: "",
-      targetAudience: "",
-      scope: [],
-      context: "",
-      pains: [],
-      baseline: { timeToCompetency: "", completionRate: "", csat: "", businessKpi: "" },
-      constraints: [],
-      hypotheses: [],
-      learningObjectives: [""],
-      kirkpatrick: {
-        l1Target: "",
-        l2Target: "",
-        l3Target: "",
-        l4Target: "",
-        plan: { what: "", when: "", where: "", tool: "", owner: "" }
-      },
-      scrum: {
-        epic: "",
-        sprintLength: "2 semaines",
-        ceremonies: ["Planning", "Daily", "Review", "Rétrospective"],
-        metrics: ["Vélocité", "Lead time", "Défauts", "Satisfaction"],
-        stories: [{ asA: "", iWant: "", soThat: "", acceptanceCriteria: "", estimate: 1 }],
-        dor: ["Story claire", "Dépendances levées", "Design/tech validés"],
-        dod: [
-          "Fonctionnel validé",
-          "Accessibilité WCAG AA",
-          "Traçabilité xAPI/SCORM",
-          "Tests verts",
-          "Documentation à jour"
-        ]
-      },
-      addie: { analysis: [], design: [], development: [], implementation: [], evaluation: [] },
-      results: { indicators: [], highlights: [] },
-      proofs: { demo: "", deliverables: [], codeRepo: "", dashboard: "", testimonials: [] },
-      learnings: { worked: [], change: [], next: [] },
-      accessibilityChecklist: [],
-      risks: [],
-      raci: [],
-      annexes: { xapi: "", storyTemplate: "", links: [] }
-    }),
-    []
-  );
-
   const {
     register,
     handleSubmit,
@@ -214,8 +16,12 @@ export default function GoodProjFormPage() {
     formState: { errors },
     reset,
     watch,
-    setValue
-  } = useForm<FormData>({ defaultValues, resolver: zodResolver(FormSchema), mode: "onBlur" });
+    setValue,
+  } = useForm<FormData>({
+    defaultValues,
+    resolver: zodResolver(FormSchema),
+    mode: "onBlur",
+  });
 
   // Arrays
   const painsFA = useFieldArray({ control, name: "pains" as any });
@@ -258,63 +64,7 @@ export default function GoodProjFormPage() {
   };
 
   const loadDemo = () => {
-    const demo: FormData = {
-      ...defaultValues,
-      pitch: "Onboarding dev : parcours mesurable, -40% time-to-productivity",
-      projectClient: "TechCorp",
-      period: "Q1–Q2 2025",
-      role: "Lead ID & Dev Front",
-      targetAudience: "Nouveaux devs (JS/TS), 30/mois",
-      scope: ["E-learning", "Portail web", "Dashboard LRS"],
-      context:
-        "Hyper-croissance produit. Onboarding long et hétérogène, pas de tracking fin. Besoin d'itérations rapides.",
-      pains: ["Onboarding 10 jours", "Complétion 58%", "Peu de transfert post-formation"],
-      baseline: { timeToCompetency: "10j", completionRate: "58%", csat: "3.8/5", businessKpi: "T2M élevé" },
-      constraints: ["Disponibilité SME limitée", "Time-to-market court"],
-      learningObjectives: [
-        "Appliquer le workflow de dev interne",
-        "Configurer l'environnement en <30 min",
-        "Livrer une PR conforme à la DoD"
-      ],
-      kirkpatrick: {
-        l1Target: "CSAT ≥ 4.5/5",
-        l2Target: "Post-test ≥ 80%",
-        l3Target: "Application à J+30 confirmée par manager",
-        l4Target: "Time-to-competency 10→6j",
-        plan: { what: "L1–L4", when: "Fin module / J+30 / Trimestriel", where: "LMS / LRS / BI", tool: "xAPI", owner: "ID Lead" }
-      },
-      scrum: {
-        epic: "Réduire le temps d'autonomie des nouveaux devs",
-        sprintLength: "2 semaines",
-        ceremonies: ["Planning", "Daily", "Review", "Rétrospective"],
-        metrics: ["Vélocité", "Lead time", "Défauts", "Satisfaction"],
-        stories: [
-          { asA: "Nouveau dev", iWant: "Un portail onboarding", soThat: "Je deviens autonome en 6j", acceptanceCriteria: "Parcours 30-60-90, checklists, quiz", estimate: 5 }
-        ],
-        dor: defaultValues.scrum.dor,
-        dod: defaultValues.scrum.dod
-      },
-      results: {
-        indicators: [
-          { name: "Time-to-competency (jours)", baseline: "10", target: "6", actual: "", gap: "" },
-          { name: "Complétion (%)", baseline: "58", target: "90", actual: "", gap: "" }
-        ],
-        highlights: ["-40% temps d'autonomie", "+32 pts complétion", "CSAT 4.6/5"]
-      },
-      proofs: {
-        demo: "https://exemple.demo/video",
-        deliverables: ["SCORM d'exemple", "Storyboard annoté"],
-        codeRepo: "https://github.com/you/repo",
-        dashboard: "https://bi.example.com",
-        testimonials: ['"Claire et efficace" — Manager, 2025-06']
-      },
-      learnings: { worked: ["Micro-modules + cas"], change: ["Plus d’exemples backend"], next: ["A/B test parcours"] },
-      accessibilityChecklist: ["Contraste OK", "Clavier OK", "Sous-titres vidéos"],
-      risks: [{ risk: "SME indisponible", probability: "M", impact: "H", response: "Timebox + validations", owner: "PO" }],
-      raci: [{ task: "Analyse besoins", r: "ID Lead", a: "PO", c: "SME", i: "RH" }],
-      annexes: { xapi: "answered/passed", storyTemplate: "En tant que..., je veux..., afin de...", links: ["Notion", "Drive"] }
-    };
-    reset(demo, { keepDefaultValues: true });
+    reset(demoData, { keepDefaultValues: true });
   };
 
   // For instant preview
@@ -330,7 +80,8 @@ export default function GoodProjFormPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold">Good Project Form</h1>
         <p className="text-ink-300 text-sm">
-          Basé sur ta fiche : <strong>ADDIE × Scrum × Kirkpatrick</strong>. Tous les champs clés, tableaux dynamiques et export JSON.
+          Basé sur ta fiche : <strong>ADDIE × Scrum × Kirkpatrick</strong>. Tous les champs clés, tableaux dynamiques et
+          export JSON.
         </p>
       </header>
 
@@ -402,7 +153,12 @@ export default function GoodProjFormPage() {
             </div>
             <div>
               <Label>Contraintes</Label>
-              <ArrayEditor itemsFA={constraintsFA} name="constraints" register={register} placeholder="Ajouter une contrainte…" />
+              <ArrayEditor
+                itemsFA={constraintsFA}
+                name="constraints"
+                register={register}
+                placeholder="Ajouter une contrainte…"
+              />
             </div>
           </Row>
           <Row>
@@ -427,12 +183,22 @@ export default function GoodProjFormPage() {
           </Row>
           <div className="mt-4">
             <Label>Hypothèses à valider</Label>
-            <ArrayEditor itemsFA={hypothesesFA} name="hypotheses" register={register} placeholder="Ajouter une hypothèse…" />
+            <ArrayEditor
+              itemsFA={hypothesesFA}
+              name="hypotheses"
+              register={register}
+              placeholder="Ajouter une hypothèse…"
+            />
           </div>
         </Section>
 
         <Section title="Objectifs d’apprentissage (Design pédagogique)">
-          <ArrayEditor itemsFA={objectivesFA} name="learningObjectives" register={register} placeholder="Objectif mesurable (Bloom)…" />
+          <ArrayEditor
+            itemsFA={objectivesFA}
+            name="learningObjectives"
+            register={register}
+            placeholder="Objectif mesurable (Bloom)…"
+          />
         </Section>
 
         <Section title="Indicateurs de succès (Kirkpatrick)">
@@ -521,28 +287,51 @@ export default function GoodProjFormPage() {
                   </Row>
                   <div className="mt-2">
                     <Label>Critères d’acceptation</Label>
-                    <TextArea {...register(`scrum.stories.${i}.acceptanceCriteria` as const)} placeholder="Critères testables…" />
+                    <TextArea
+                      {...register(`scrum.stories.${i}.acceptanceCriteria` as const)}
+                      placeholder="Critères testables…"
+                    />
                   </div>
                   <div className="mt-3 flex justify-end gap-2">
-                    <button type="button" className="btn" onClick={() => storiesFA.remove(i)}>Supprimer</button>
+                    <button type="button" className="btn" onClick={() => storiesFA.remove(i)}>
+                      Supprimer
+                    </button>
                   </div>
                 </div>
               ))}
-              <button type="button" className="btn" onClick={() => storiesFA.append({ asA: "", iWant: "", soThat: "", acceptanceCriteria: "", estimate: 1 })}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() =>
+                  storiesFA.append({ asA: "", iWant: "", soThat: "", acceptanceCriteria: "", estimate: 1 })
+                }
+              >
                 + Ajouter une story
               </button>
             </div>
-            {errors.scrum?.stories && <p className="mt-1 text-sm text-red-400">{(errors.scrum.stories as any).message}</p>}
+            {errors.scrum?.stories && (
+              <p className="mt-1 text-sm text-red-400">{(errors.scrum.stories as any).message}</p>
+            )}
           </div>
 
           <Row>
             <div>
               <Label>Definition of Ready (DoR)</Label>
-              <ArrayEditor itemsFA={useFieldArray({ control, name: "scrum.dor" as any })} name="scrum.dor" register={register} placeholder="Élément DoR…" />
+              <ArrayEditor
+                itemsFA={useFieldArray({ control, name: "scrum.dor" as any })}
+                name="scrum.dor"
+                register={register}
+                placeholder="Élément DoR…"
+              />
             </div>
             <div>
               <Label>Definition of Done (DoD)</Label>
-              <ArrayEditor itemsFA={useFieldArray({ control, name: "scrum.dod" as any })} name="scrum.dod" register={register} placeholder="Élément DoD…" />
+              <ArrayEditor
+                itemsFA={useFieldArray({ control, name: "scrum.dod" as any })}
+                name="scrum.dod"
+                register={register}
+                placeholder="Élément DoD…"
+              />
             </div>
           </Row>
         </Section>
@@ -551,26 +340,51 @@ export default function GoodProjFormPage() {
           <Row>
             <div>
               <Label>Analyse</Label>
-              <ArrayEditor itemsFA={useFieldArray({ control, name: "addie.analysis" as any })} name="addie.analysis" register={register} placeholder="Activité / livrable…" />
+              <ArrayEditor
+                itemsFA={useFieldArray({ control, name: "addie.analysis" as any })}
+                name="addie.analysis"
+                register={register}
+                placeholder="Activité / livrable…"
+              />
             </div>
             <div>
               <Label>Design</Label>
-              <ArrayEditor itemsFA={useFieldArray({ control, name: "addie.design" as any })} name="addie.design" register={register} placeholder="Activité / livrable…" />
+              <ArrayEditor
+                itemsFA={useFieldArray({ control, name: "addie.design" as any })}
+                name="addie.design"
+                register={register}
+                placeholder="Activité / livrable…"
+              />
             </div>
           </Row>
           <Row>
             <div>
               <Label>Développement</Label>
-              <ArrayEditor itemsFA={useFieldArray({ control, name: "addie.development" as any })} name="addie.development" register={register} placeholder="Activité / livrable…" />
+              <ArrayEditor
+                itemsFA={useFieldArray({ control, name: "addie.development" as any })}
+                name="addie.development"
+                register={register}
+                placeholder="Activité / livrable…"
+              />
             </div>
             <div>
               <Label>Implémentation</Label>
-              <ArrayEditor itemsFA={useFieldArray({ control, name: "addie.implementation" as any })} name="addie.implementation" register={register} placeholder="Activité / livrable…" />
+              <ArrayEditor
+                itemsFA={useFieldArray({ control, name: "addie.implementation" as any })}
+                name="addie.implementation"
+                register={register}
+                placeholder="Activité / livrable…"
+              />
             </div>
           </Row>
           <div className="mt-4">
             <Label>Évaluation</Label>
-            <ArrayEditor itemsFA={useFieldArray({ control, name: "addie.evaluation" as any })} name="addie.evaluation" register={register} placeholder="Activité / livrable…" />
+            <ArrayEditor
+              itemsFA={useFieldArray({ control, name: "addie.evaluation" as any })}
+              name="addie.evaluation"
+              register={register}
+              placeholder="Activité / livrable…"
+            />
           </div>
         </Section>
 
@@ -581,7 +395,10 @@ export default function GoodProjFormPage() {
                 <Row>
                   <div>
                     <Label>Indicateur</Label>
-                    <TextInput {...register(`results.indicators.${i}.name` as const)} placeholder="ex. Time-to-competency" />
+                    <TextInput
+                      {...register(`results.indicators.${i}.name` as const)}
+                      placeholder="ex. Time-to-competency"
+                    />
                   </div>
                   <div>
                     <Label>Baseline</Label>
@@ -603,18 +420,29 @@ export default function GoodProjFormPage() {
                   <TextInput {...register(`results.indicators.${i}.gap` as const)} placeholder="ex. -0.2" />
                 </div>
                 <div className="mt-3 flex justify-end">
-                  <button type="button" className="btn" onClick={() => indicatorsFA.remove(i)}>Supprimer</button>
+                  <button type="button" className="btn" onClick={() => indicatorsFA.remove(i)}>
+                    Supprimer
+                  </button>
                 </div>
               </div>
             ))}
-            <button type="button" className="btn" onClick={() => indicatorsFA.append({ name: "", baseline: "", target: "", actual: "", gap: "" })}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => indicatorsFA.append({ name: "", baseline: "", target: "", actual: "", gap: "" })}
+            >
               + Ajouter un indicateur
             </button>
           </div>
 
           <div className="mt-4">
             <Label>Faits marquants</Label>
-            <ArrayEditor itemsFA={highlightsFA} name="results.highlights" register={register} placeholder="Impact clé…" />
+            <ArrayEditor
+              itemsFA={highlightsFA}
+              name="results.highlights"
+              register={register}
+              placeholder="Impact clé…"
+            />
           </div>
         </Section>
 
@@ -636,12 +464,22 @@ export default function GoodProjFormPage() {
             </div>
             <div>
               <Label>Livrables</Label>
-              <ArrayEditor itemsFA={deliverablesFA} name="proofs.deliverables" register={register} placeholder="Ajoute un livrable…" />
+              <ArrayEditor
+                itemsFA={deliverablesFA}
+                name="proofs.deliverables"
+                register={register}
+                placeholder="Ajoute un livrable…"
+              />
             </div>
           </Row>
           <div className="mt-4">
             <Label>Témoignages</Label>
-            <ArrayEditor itemsFA={testimonialsFA} name="proofs.testimonials" register={register} placeholder='ex. "Très clair" — Manager, 2025-06' />
+            <ArrayEditor
+              itemsFA={testimonialsFA}
+              name="proofs.testimonials"
+              register={register}
+              placeholder='ex. "Très clair" — Manager, 2025-06'
+            />
           </div>
         </Section>
 
@@ -649,11 +487,21 @@ export default function GoodProjFormPage() {
           <Row>
             <div>
               <Label>Ce qui a bien marché</Label>
-              <ArrayEditor itemsFA={workedFA} name="learnings.worked" register={register} placeholder="Ajouter un point…" />
+              <ArrayEditor
+                itemsFA={workedFA}
+                name="learnings.worked"
+                register={register}
+                placeholder="Ajouter un point…"
+              />
             </div>
             <div>
               <Label>Ce que l’on changerait</Label>
-              <ArrayEditor itemsFA={changeFA} name="learnings.change" register={register} placeholder="Ajouter un point…" />
+              <ArrayEditor
+                itemsFA={changeFA}
+                name="learnings.change"
+                register={register}
+                placeholder="Ajouter un point…"
+              />
             </div>
           </Row>
           <div className="mt-4">
@@ -667,17 +515,14 @@ export default function GoodProjFormPage() {
             value={watch("accessibilityChecklist")}
             onToggle={(item) => {
               const v = watch("accessibilityChecklist");
-              setValue(
-                "accessibilityChecklist",
-                v.includes(item) ? v.filter((x) => x !== item) : [...v, item]
-              );
+              setValue("accessibilityChecklist", v.includes(item) ? v.filter((x) => x !== item) : [...v, item]);
             }}
             items={[
               "Alternatives textuelles",
               "Contraste ≥ 4.5:1",
               "Navigation clavier & focus visible",
               "Sous-titres / transcripts",
-              "Lisibilité mobile"
+              "Lisibilité mobile",
             ]}
           />
         </Section>
@@ -720,11 +565,17 @@ export default function GoodProjFormPage() {
                   <TextInput {...register(`risks.${i}.owner` as const)} placeholder="Nom" />
                 </div>
                 <div className="mt-3 flex justify-end">
-                  <button type="button" className="btn" onClick={() => risksFA.remove(i)}>Supprimer</button>
+                  <button type="button" className="btn" onClick={() => risksFA.remove(i)}>
+                    Supprimer
+                  </button>
                 </div>
               </div>
             ))}
-            <button type="button" className="btn" onClick={() => risksFA.append({ risk: "", probability: "M", impact: "M", response: "", owner: "" })}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => risksFA.append({ risk: "", probability: "M", impact: "M", response: "", owner: "" })}
+            >
               + Ajouter un risque
             </button>
           </div>
@@ -734,23 +585,41 @@ export default function GoodProjFormPage() {
             {raciFA.fields.map((f, i) => (
               <div key={f.id} className="rounded-xl border border-ink-800 p-3">
                 <Row>
-                  <div><Label>Tâche</Label><TextInput {...register(`raci.${i}.task` as const)} /></div>
-                  <div><Label>R</Label><TextInput {...register(`raci.${i}.r` as const)} /></div>
+                  <div>
+                    <Label>Tâche</Label>
+                    <TextInput {...register(`raci.${i}.task` as const)} />
+                  </div>
+                  <div>
+                    <Label>R</Label>
+                    <TextInput {...register(`raci.${i}.r` as const)} />
+                  </div>
                 </Row>
                 <Row>
-                  <div><Label>A</Label><TextInput {...register(`raci.${i}.a` as const)} /></div>
-                  <div><Label>C</Label><TextInput {...register(`raci.${i}.c` as const)} /></div>
+                  <div>
+                    <Label>A</Label>
+                    <TextInput {...register(`raci.${i}.a` as const)} />
+                  </div>
+                  <div>
+                    <Label>C</Label>
+                    <TextInput {...register(`raci.${i}.c` as const)} />
+                  </div>
                 </Row>
                 <div className="mt-2">
                   <Label>I</Label>
                   <TextInput {...register(`raci.${i}.i` as const)} />
                 </div>
                 <div className="mt-3 flex justify-end">
-                  <button type="button" className="btn" onClick={() => raciFA.remove(i)}>Supprimer</button>
+                  <button type="button" className="btn" onClick={() => raciFA.remove(i)}>
+                    Supprimer
+                  </button>
                 </div>
               </div>
             ))}
-            <button type="button" className="btn" onClick={() => raciFA.append({ task: "", r: "", a: "", c: "", i: "" })}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => raciFA.append({ task: "", r: "", a: "", c: "", i: "" })}
+            >
               + Ajouter une ligne RACI
             </button>
           </div>
@@ -769,16 +638,31 @@ export default function GoodProjFormPage() {
           </Row>
           <div className="mt-4">
             <Label>Liens utiles</Label>
-            <ArrayEditor itemsFA={linksFA} name="annexes.links" register={register} placeholder="URL Notion / Drive / Confluence…" />
+            <ArrayEditor
+              itemsFA={linksFA}
+              name="annexes.links"
+              register={register}
+              placeholder="URL Notion / Drive / Confluence…"
+            />
           </div>
         </Section>
 
         <div className="flex flex-wrap gap-3">
-          <button type="submit" className="btn btn-primary">Valider & Prévisualiser JSON</button>
-          <button type="button" className="btn" onClick={downloadJson}>Télécharger JSON</button>
-          <button type="button" className="btn" onClick={copyJson}>Copier JSON</button>
-          <button type="button" className="btn" onClick={() => reset(defaultValues)}>Réinitialiser</button>
-          <button type="button" className="btn" onClick={loadDemo}>Charger un exemple</button>
+          <button type="submit" className="btn btn-primary">
+            Valider & Prévisualiser JSON
+          </button>
+          <button type="button" className="btn" onClick={downloadJson}>
+            Télécharger JSON
+          </button>
+          <button type="button" className="btn" onClick={copyJson}>
+            Copier JSON
+          </button>
+          <button type="button" className="btn" onClick={() => reset(defaultValues)}>
+            Réinitialiser
+          </button>
+          <button type="button" className="btn" onClick={loadDemo}>
+            Charger un exemple
+          </button>
         </div>
       </form>
 
@@ -791,60 +675,6 @@ export default function GoodProjFormPage() {
       <p className="text-center text-xs text-ink-500">
         Astuce : tu pourras plus tard brancher une API Route ou une action serveur pour persister ce JSON.
       </p>
-    </div>
-  );
-}
-
-// --------- Small reusable components ----------
-function ArrayEditor({
-  itemsFA,
-  name,
-  register,
-  placeholder
-}: {
-  itemsFA: ReturnType<typeof useFieldArray<any>>;
-  name: string;
-  register: UseFormRegister<FormData>;
-  placeholder?: string;
-}) {
-  return (
-    <div className="space-y-2">
-      {itemsFA.fields.map((field: any, index: number) => (
-        <div key={field.id} className="flex gap-2">
-          <input className="input" {...register(`${name}.${index}` as any)} placeholder={placeholder} />
-          <button type="button" className="btn" onClick={() => itemsFA.remove(index)}>–</button>
-        </div>
-      ))}
-      <button type="button" className="btn" onClick={() => itemsFA.append("")}>+ Ajouter</button>
-    </div>
-  );
-}
-
-function Checklist({
-  items,
-  value,
-  onToggle
-}: {
-  items: string[];
-  value: string[];
-  onToggle: (item: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((it) => {
-        const active = value.includes(it);
-        return (
-          <button
-            key={it}
-            type="button"
-            className={`badge ${active ? "bg-accent-500 text-ink-950" : ""}`}
-            onClick={() => onToggle(it)}
-            title={it}
-          >
-            {it}
-          </button>
-        );
-      })}
     </div>
   );
 }
