@@ -18,7 +18,7 @@ export default function GoodProjFormPage() {
     watch,
     setValue,
   } = useForm<FormData>({
-    defaultValues,
+    defaultValues: structuredClone(defaultValues),
     resolver: zodResolver(FormSchema),
     mode: "onBlur",
   });
@@ -64,7 +64,7 @@ export default function GoodProjFormPage() {
   };
 
   const loadDemo = () => {
-    reset(demoData, { keepDefaultValues: true });
+    reset(structuredClone(demoData), { keepDefaultValues: true });
   };
 
   // For instant preview
@@ -657,7 +657,7 @@ export default function GoodProjFormPage() {
           <button type="button" className="btn" onClick={copyJson}>
             Copier JSON
           </button>
-          <button type="button" className="btn" onClick={() => reset(defaultValues)}>
+          <button type="button" className="btn" onClick={() => reset(structuredClone(defaultValues))}>
             Réinitialiser
           </button>
           <button type="button" className="btn" onClick={loadDemo}>
